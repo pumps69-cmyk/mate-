@@ -24,7 +24,7 @@ except ImportError as e:
     error_detalle = str(e)
 
 st.title("📐 es modafokin sub uwu subawu")
-st.markdown("aca va el nomvre pero aun no tiene .")
+st.markdown("Visualizador interactivo de cálculo diferencial: **Raíces, Monotonía, Concavidad y Taller Táctil**.")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías en el entorno de Streamlit Cloud: {error_detalle}")
