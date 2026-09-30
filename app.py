@@ -16,7 +16,6 @@ try:
     import numpy as np
     import matplotlib.pyplot as plt
     from streamlit_drawable_canvas import st_canvas
-    from PIL import Image
     plt.style.use('dark_background')
     LIBRERIAS_DISPONIBLES = True
 except ImportError as e:
@@ -24,7 +23,7 @@ except ImportError as e:
     error_detalle = str(e)
 
 st.title("📐 es modafokin sub uwu subawu")
-st.markdown("aca va un nomvre pero no se me ocurrio mada, les parece bien juan?.")
+st.markdown("Acá va un nombre pero no se me ocurrió nada, ¿les parece bien Juan?")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías en el entorno de Streamlit Cloud: {error_detalle}")
@@ -48,70 +47,55 @@ else:
             return []
 
     # ==========================================
-    # CONTROL DE ESTADO INICIAL
+    # CONTROL DE ESTADO INICIAL (SIN ENGAÑOS)
     # ==========================================
     if 'func_actual' not in st.session_state:
-        st.session_state.func_actual = "x**3 - 3*x"
+        st.session_state.func_actual = "x**2"
 
     # ==========================================
-    # SELECCIÓN DE MODO (AISLADO PARA EVITAR CONFLICTOS)
+    # SELECCIÓN DE MODO
     # ==========================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
     
     modo_entrada = st.sidebar.radio(
-        "Elige el método de entrada:", 
-        ["⌨️️ Escribir por Teclado", "✍️ Usar Panel Táctil"]
+        "Elige el método de trabajo:", 
+        ["⌨️ Escribir Función", "✍️ Pizarrón de Bocetos (Visual)"]
     )
 
     st.sidebar.markdown("---")
 
-    if modo_entrada == "⌨️ Escribir por Teclado":
+    if modo_entrada == "⌨️ Escribir Función":
         st.sidebar.markdown("### ⌨️ Entrada por Teclado")
-        func_input = st.sidebar.text_input("Ingresa f(x):", value=st.session_state.func_actual)
+        func_input = st.sidebar.text_input("Ingresa tu propia f(x):", value=st.session_state.func_actual)
+        
         if func_input and func_input.strip() != "":
             st.session_state.func_actual = func_input.lower().replace('^', '**')
+        else:
+            st.sidebar.warning("⚠️ La función no puede estar vacía. Se usará x**2.")
+            st.session_state.func_actual = "x**2"
+            
         st.sidebar.info("💡 **Tip:** Usa `x**3`, `3*x`, `sqrt(x)`, `sin(x)` o `exp(x)`.")
 
     else:
-        st.sidebar.markdown("### ✍️ Panel Táctil / Mano alzada")
-        st.sidebar.info("Dibuja en el recuadro y haz clic en interpretar:")
+        st.sidebar.markdown("### ✍️ Pizarrón Libre")
+        st.sidebar.info("Úsalo para bocetar gráficas o hacer anotaciones manuales. (La función a evaluar se mantiene la que ingresaste en teclado).")
         
-        # El lienzo con return_image_data=True para evitar el RuntimeError
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
             stroke_width=4,
             stroke_color="#000000",
             background_color="#FFFFFF",
-            height=150,
+            height=250,
             width=300,
             drawing_mode="freedraw",
             key="canvas_tactil",
             return_image_data=True,
         )
-        
-        if st.sidebar.button("Interpretar Trazo Dibujado"):
-            if canvas_result is not None and canvas_result.image_data is not None:
-                try:
-                    pixeles_dibujados = np.sum(canvas_result.image_data[:, :, 0] < 255)
-                    if pixeles_dibujados > 40:
-                        st.session_state.func_actual = "x**2 - 4"
-                        st.sidebar.success("¡Trazo analizado y traducido a x**2 - 4!")
-                    else:
-                        st.sidebar.warning("⚠️ El lienzo está vacío. ¡Dibuja algo primero!")
-                except Exception:
-                    st.session_state.func_actual = "x**2 - 4"
-                    st.sidebar.success("¡Trazo analizado y traducido a x**2 - 4!")
-            else:
-                st.sidebar.warning("⚠️ Dibuja primero una función en el lienzo.")
-
-    # Protección anti-vacíos por seguridad
-    if not st.session_state.func_actual.strip():
-        st.session_state.func_actual = "x**3 - 3*x"
 
     func_texto = st.session_state.func_actual
 
     # Slider para el Parámetro X (Punto de Tangencia)
-    x0 = st.sidebar.slider("Parámetro x (Punto de Tangencia):", min_value=-3.5, max_value=3.5, value=1.20, step=0.05)
+    x0 = st.sidebar.slider("Parámetro x (Punto de Evaluación y Tangencia):", min_value=-5.0, max_value=5.0, value=1.20, step=0.05)
 
     # ==========================================
     # PROCESAMIENTO MATEMÁTICO Y VISUALIZACIÓN
@@ -143,8 +127,8 @@ else:
         latex_df = sp.latex(df_simbolica)
         latex_ddf = sp.latex(ddf_simbolica)
 
-        # Fórmulas analíticas formales estilo pizarrón
-        st.markdown("### 📝 Fórmulas Analíticas Formales")
+        # Fórmulas analíticas formales
+        st.markdown("### 📝 Fórmulas Analíticas")
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1: st.latex(r"f(x) = " + latex_f)
         with col_f2: st.latex(r"f^{\prime}(x) = " + latex_df)
@@ -156,27 +140,35 @@ else:
 
         with col_datos:
             st.markdown("### 📍 Reporte Clave")
-            st.markdown(f"""
-            * **Función activa:** `{func_texto}`
-            * **Raíces (Eje X):** `{intersecciones_x if intersecciones_x else 'Ninguna real'}`
-            * **Intersección Y:** `{interseccion_y}`
-            * **Máximos Locales:** `{maximos if maximos else 'Ninguno'}`
-            * **Mínimos Locales:** `{minimos if minimos else 'Ninguno'}`
-            * **Puntos de Inflexión:** `{puntos_inflexion if puntos_inflexion else 'Ninguno'}`
             
-            ---
-            **Punto actual ($x_0$):**
-            * $x_0 =$ `{x0:.2f}`
-            * $f(x_0) =$ `{y0:.2f}`
-            * **Pendiente ($m$):** `{m:.2f}`
-            """)
+            # Formateador matemático para conjuntos (raíces, máximos, etc)
+            def format_math_set(titulo, valores):
+                if valores:
+                    str_vals = ", ".join([str(v) for v in valores])
+                    return rf"\text{{{titulo}: }} \{{{str_vals}\}}"
+                return rf"\text{{{titulo}: }} \emptyset \text{{ (Ninguno)}}"
+
+            st.latex(format_math_set("Raíces (Eje X)", intersecciones_x))
+            st.latex(rf"\text{{Intersección Y: }} {interseccion_y}")
+            st.latex(format_math_set("Máximos", maximos))
+            st.latex(format_math_set("Mínimos", minimos))
+            st.latex(format_math_set("Ptos. Inflexión", puntos_inflexion))
+            
+            st.markdown("---")
+            st.markdown("### 🎯 Evaluación en Punto Actual")
+            st.info("Resultados de sustituir el valor del slider en las ecuaciones:")
+            
+            # Bloque visual elegante para los resultados
+            st.latex(rf"x_0 = {x0:.2f}")
+            st.latex(rf"f({x0:.2f}) = {y0:.2f}")
+            st.latex(rf"f'({x0:.2f}) = {m:.2f} \quad \text{{(Pendiente)}}")
 
         with col_graficas:
             f_num = sp.lambdify(x, f_simbolica, 'numpy')
             df_num = sp.lambdify(x, df_simbolica, 'numpy')
             ddf_num = sp.lambdify(x, ddf_simbolica, 'numpy')
 
-            x_vals = np.linspace(-4, 4, 600)
+            x_vals = np.linspace(-5, 5, 800)
             
             def eval_segura(func_n, vals):
                 res = func_n(vals)
@@ -209,7 +201,7 @@ else:
             ax2.plot(x_vals, y_vals_df, color="#ff79c6", linewidth=2, label=r"$f^{\prime}(x)$")
             ax2.plot(x0, m, 'o', color="#f1fa8c", markersize=7)
             ax2.axhline(0, color='gray', linewidth=1); ax2.axvline(0, color='gray', linewidth=0.5)
-            ax2.set_title("2. Segunda Derivada (Monotonía / Pendiente)", color="white", fontsize=10)
+            ax2.set_title("2. Primera Derivada (Monotonía / Pendiente)", color="white", fontsize=10)
             ax2.grid(True, linestyle=':', alpha=0.3)
             ax2.legend(loc="upper right", facecolor='#1e222d', edgecolor='#1e222d', labelcolor="white", fontsize=8)
 
@@ -221,11 +213,11 @@ else:
             ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf > 0), color='#50fa7b', alpha=0.3)
             ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf < 0), color='#ff5555', alpha=0.3)
             ax3.axhline(0, color='white', linewidth=1); ax3.axvline(0, color='gray', linewidth=0.5)
-            ax3.set_title("3. Tercera Derivada / Concavidad", color="white", fontsize=10)
+            ax3.set_title("3. Segunda Derivada (Concavidad e Inflexión)", color="white", fontsize=10)
             ax3.grid(True, linestyle=':', alpha=0.3)
             ax3.legend(loc="upper right", facecolor='#1e222d', edgecolor='#1e222d', labelcolor="white", fontsize=8)
 
             st.pyplot(fig)
 
     except Exception as e:
-        st.error(f"⚠️ Revisa la sintaxis de tu función. Error detectado: {e}")
+        st.error(f"⚠️ Revisa la sintaxis de tu función. (Ejemplo válido: x**2 - 4*x). Detalle técnico: {e}")
