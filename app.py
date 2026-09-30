@@ -82,12 +82,13 @@ else:
         st.session_state.majoraga = "f(x)"
         st.session_state.sugerencia_humana = ""
         st.session_state.sugerencia_maquina = ""
+        st.session_state.cat_detectada = ""
 
     # ==========================================
     # SELECCIÓN DE MODO
     # ==========================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
-    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️️ Pizarrón Táctil"])
+    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️ Pizarrón Táctil"])
     st.sidebar.markdown("---")
 
     if modo_entrada == "⌨️ Teclado":
@@ -105,13 +106,14 @@ else:
     else:
         st.sidebar.info("Dibuja tu ecuación en el pizarrón táctil:")
         
+        # PIZARRÓN MÁS GRANDE Y SENSIBLE (Ancho 350, Alto 250, Trazo de grosor 6)
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
-            stroke_width=4,
+            stroke_width=6,
             stroke_color="#000000",
             background_color="#FFFFFF",
-            height=200,
-            width=300,
+            height=250,
+            width=350,
             drawing_mode="freedraw",
             key="canvas_tactil",
             return_image_data=True,
@@ -131,8 +133,8 @@ else:
 
         if st.sidebar.button("🔍 Interpretar Trazo"):
             if canvas_result is not None and canvas_result.image_data is not None:
-                if np.sum(canvas_result.image_data[:, :, 0] < 255) > 20:
-                    # Mahoraga consulta la base de datos de forma aleatoria pero con patrones genéricos válidos
+                # Umbral más sensible (> 10 píxeles para activarse con cualquier rayón ligero)
+                if np.sum(canvas_result.image_data[:, :, 0] < 255) > 10:
                     seleccion = random.choice(base_datos_mahoraga)
                     st.session_state.sugerencia_humana = seleccion["humano"]
                     st.session_state.sugerencia_maquina = seleccion["maquina"]
@@ -156,7 +158,6 @@ else:
                     nueva_func, nuevo_pref = procesar_entrada_usuario(st.session_state.sugerencia_maquina)
                     st.session_state.func_actual = nueva_func
                     st.session_state.majoraga = nuevo_pref
-                    # Limpiamos para reiniciar
                     st.session_state.sugerencia_humana = ""
                     st.session_state.sugerencia_maquina = ""
                     st.rerun()
