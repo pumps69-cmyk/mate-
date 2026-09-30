@@ -1,5 +1,6 @@
 import streamlit as st
 import warnings
+import re  # <--- IMPORTANTE: La magia negra para leer "3x" o "y2"
 
 # Configuración inicial de la página web
 st.set_page_config(
@@ -28,7 +29,8 @@ st.markdown("Acá va un nombre pero no se me ocurrió nada, ¿les parece bien Ju
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías: {error_detalle}")
 else:
-    x = sp.symbols('x')
+    # Agregamos la 'y' a los símbolos matemáticos conocidos
+    x, y_sym = sp.symbols('x y')
 
     def buscar_raices_reales(expr):
         try:
@@ -46,41 +48,60 @@ else:
             return []
 
     # ==========================================
+    # ALGORITMO DE ADAPTACIÓN HUMANO-MÁQUINA
+    # ==========================================
+    def procesar_entrada_usuario(raw_input):
+        t = raw_input.lower().replace(' ', '').replace('^', '**')
+        t = t.replace('f(x)', 'y')
+        
+        # MAGIA 1: Si hay un número pegado a una letra o paréntesis, pon multiplicación (Ej: 3x -> 3*x)
+        t = re.sub(r'(\d)([xy(])', r'\1*\2', t)
+        
+        # MAGIA 2: Si hay una letra pegada a un número, asume potencia (Ej: x2 -> x**2, y2 -> y**2)
+        t = re.sub(r'([xy])(\d+)', r'\1**\2', t)
+        
+        if '=' in t:
+            try:
+                lhs_str, rhs_str = t.split('=', 1)
+                lhs_expr = sp.sympify(lhs_str)
+                rhs_expr = sp.sympify(rhs_str)
+                
+                # MAGIA 3: Si usan la "y" mezclada, la app la despeja sola usando álgebra
+                if y_sym in lhs_expr.free_symbols or y_sym in rhs_expr.free_symbols:
+                    sols = sp.solve(sp.Eq(lhs_expr, rhs_expr), y_sym)
+                    if sols:
+                        # Toma la última solución (la rama positiva de la raíz)
+                        return str(sols[-1]), "y"
+                return str(rhs_expr), "f(x)"
+            except:
+                return "x**2", "f(x)"
+        else:
+            return t, "f(x)"
+
+    # ==========================================
     # MEMORIA DE ESTADO
     # ==========================================
     if 'func_actual' not in st.session_state:
         st.session_state.func_actual = "x**2"
-    
-    # Invocación del General Divino para la adaptación visual
-    if 'majoraga' not in st.session_state:
+        st.session_state.display_text = "x2"  # Lo que ve el usuario en la caja
         st.session_state.majoraga = "f(x)"
-
-    if 'mostrar_traduccion' not in st.session_state:
         st.session_state.mostrar_traduccion = False
 
     # ==========================================
-    # SELECCIÓN DE MODO Y ADAPTACIÓN
+    # SELECCIÓN DE MODO
     # ==========================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
-    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️ Pizarrón Táctil"])
+    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️️ Teclado", "✍️ Pizarrón Táctil"])
     st.sidebar.markdown("---")
 
     if modo_entrada == "⌨️ Teclado":
-        func_input = st.sidebar.text_input("Ingresa tu ecuación:", value=st.session_state.func_actual)
+        func_input = st.sidebar.text_input("Ingresa tu ecuación:", value=st.session_state.display_text)
         
         if func_input and func_input.strip() != "":
-            raw_input = func_input.lower().replace('^', '**').replace(' ', '')
-            
-            # EL ALGORITMO MAHORAGA: Se adapta a "y" o "f(x)" separando visual de lógica
-            if "y=" in raw_input:
-                st.session_state.majoraga = "y"
-                st.session_state.func_actual = raw_input.split("y=")[1]
-            elif "f(x)=" in raw_input:
-                st.session_state.majoraga = "f(x)"
-                st.session_state.func_actual = raw_input.split("f(x)=")[1]
-            else:
-                st.session_state.majoraga = "f(x)"
-                st.session_state.func_actual = raw_input
+            st.session_state.display_text = func_input  # Para que no le cambie el texto de golpe
+            nueva_func, nuevo_pref = procesar_entrada_usuario(func_input)
+            st.session_state.func_actual = nueva_func
+            st.session_state.majoraga = nuevo_pref
         else:
             st.session_state.func_actual = "x**2"
 
@@ -108,19 +129,18 @@ else:
 
         if st.session_state.mostrar_traduccion:
             st.sidebar.success("✅ Trazo detectado.")
-            func_traducida = st.sidebar.text_input("Confirma los caracteres (Ej: y = x**2 - 4):")
+            func_traducida = st.sidebar.text_input("Confirma los caracteres (Ej: y2 = 3x):")
             
             if st.sidebar.button("🚀 Transformar y Graficar"):
-                raw_input = func_traducida.lower().replace('^', '**').replace(' ', '')
-                if "y=" in raw_input:
-                    st.session_state.majoraga = "y"
-                    st.session_state.func_actual = raw_input.split("y=")[1]
+                if func_traducida.strip():
+                    st.session_state.display_text = func_traducida
+                    nueva_func, nuevo_pref = procesar_entrada_usuario(func_traducida)
+                    st.session_state.func_actual = nueva_func
+                    st.session_state.majoraga = nuevo_pref
+                    st.session_state.mostrar_traduccion = False
+                    st.rerun()
                 else:
-                    st.session_state.majoraga = "f(x)"
-                    st.session_state.func_actual = raw_input.replace("f(x)=", "")
-                    
-                st.session_state.mostrar_traduccion = False
-                st.rerun()
+                    st.sidebar.error("Escribe algo válido.")
 
     func_texto = st.session_state.func_actual
     majoraga = st.session_state.majoraga
@@ -158,12 +178,11 @@ else:
         latex_ddf = sp.latex(ddf_simbolica)
 
         # ==========================================
-        # PRESENTACIÓN VISUAL (ADAPTACIÓN ACTIVA)
+        # PRESENTACIÓN VISUAL
         # ==========================================
         st.markdown("### 📝 Ecuación Adaptada")
         
         col_f1, col_f2, col_f3 = st.columns(3)
-        # Fix de sintaxis: separamos las variables de las diagonales invertidas
         with col_f1: st.latex(f"{majoraga} = " + latex_f)
         with col_f2: st.latex(f"{majoraga}" + r"^{\prime} = " + latex_df)
         with col_f3: st.latex(f"{majoraga}" + r"^{\prime\prime} = " + latex_ddf)
@@ -248,5 +267,4 @@ else:
             st.pyplot(fig)
 
     except Exception as e:
-        st.error(f"⚠️ Revisa la sintaxis. (Ejemplo válido: y = 3*x**2). Error: {e}")
-
+        st.error(f"⚠️ Revisa la sintaxis. (Intenta escribirlo más detallado si es muy complejo). Error: {e}")
