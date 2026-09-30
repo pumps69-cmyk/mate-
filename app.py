@@ -87,7 +87,7 @@ else:
     # SELECCIÓN DE MODO
     # ==========================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
-    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️️ Teclado", "✍️ Pizarrón Táctil"])
+    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️️ Pizarrón Táctil"])
     st.sidebar.markdown("---")
 
     if modo_entrada == "⌨️ Teclado":
@@ -118,24 +118,25 @@ else:
         )
 
         # ==========================================
-        # MINI BASE DE DATOS DE TRADUCCIÓN (HUMANO <-> MÁQUINA)
+        # MINI BASE DE DATOS CON REFERENCIAS GENÉRICAS
         # ==========================================
         base_datos_mahoraga = [
-            {"humano": "y^2 = 3*x", "maquina": "y2 = 3x"},
-            {"humano": "x^3 - 3*x", "maquina": "x**3 - 3*x"},
-            {"humano": "x^2 - 5*x + 6", "maquina": "x**2 - 5*x + 6"},
-            {"humano": "sin(x)", "maquina": "sin(x)"},
-            {"humano": "cos(x)", "maquina": "cos(x)"},
-            {"humano": "x^3 - 3*x + 1", "maquina": "x**3 - 3*x + 1"}
+            {"categoria": "Polinomio Cúbico General", "humano": "x^3 - 3*x", "maquina": "x**3 - 3*x"},
+            {"categoria": "Polinomio Cuadrático General", "humano": "x^2 - 4*x + 3", "maquina": "x**2 - 4*x + 3"},
+            {"categoria": "Relación Implícita / Parábola", "humano": "y^2 = 4*x", "maquina": "y2 = 4x"},
+            {"categoria": "Función Trigonométrica Base", "humano": "sin(x)", "maquina": "sin(x)"},
+            {"categoria": "Función Trigonométrica Amortiguada", "humano": "sin(x) * x", "maquina": "sin(x) * x"},
+            {"categoria": "Polinomio Cúbico Desplazado", "humano": "x^3 - 3*x + 1", "maquina": "x**3 - 3*x + 1"}
         ]
 
         if st.sidebar.button("🔍 Interpretar Trazo"):
             if canvas_result is not None and canvas_result.image_data is not None:
                 if np.sum(canvas_result.image_data[:, :, 0] < 255) > 20:
-                    # Simulamos la "adaptación" tomando un par al azar de nuestra mini base de datos
+                    # Mahoraga consulta la base de datos de forma aleatoria pero con patrones genéricos válidos
                     seleccion = random.choice(base_datos_mahoraga)
                     st.session_state.sugerencia_humana = seleccion["humano"]
                     st.session_state.sugerencia_maquina = seleccion["maquina"]
+                    st.session_state.cat_detectada = seleccion["categoria"]
                 else:
                     st.sidebar.warning("⚠️ Dibuja algo en el lienzo primero.")
                     st.session_state.sugerencia_humana = ""
@@ -145,7 +146,8 @@ else:
         if st.session_state.sugerencia_humana:
             st.sidebar.markdown("---")
             st.sidebar.markdown("🌀 **Mahoraga se ha adaptado:**")
-            st.sidebar.info(f"Lo que tú ves (Humano): `{st.session_state.sugerencia_humana}`\n\nLo que entiende la PC: `{st.session_state.sugerencia_maquina}`")
+            st.sidebar.caption(f"Patrón detectado: *{st.session_state.cat_detectada}*")
+            st.sidebar.info(f"**Para humano:** `{st.session_state.sugerencia_humana}`\n\n**Para máquina:** `{st.session_state.sugerencia_maquina}`")
             
             col_si, col_no = st.sidebar.columns(2)
             with col_si:
@@ -154,7 +156,7 @@ else:
                     nueva_func, nuevo_pref = procesar_entrada_usuario(st.session_state.sugerencia_maquina)
                     st.session_state.func_actual = nueva_func
                     st.session_state.majoraga = nuevo_pref
-                    # Limpiamos la sugerencia temporal para reiniciar el ciclo
+                    # Limpiamos para reiniciar
                     st.session_state.sugerencia_humana = ""
                     st.session_state.sugerencia_maquina = ""
                     st.rerun()
@@ -280,7 +282,7 @@ else:
 
                 # Gráfica 3
                 ax3.set_facecolor('#1e222d')
-                ax3.plot(x_vals, y_vals_ddf, color="bd93f9", linewidth=2, label=f"${majoraga}''$")
+                ax3.plot(x_vals, y_vals_ddf, color="#bd93f9", linewidth=2, label=f"${majoraga}''$")
                 eval_ddf_0 = float(ddf_simbolica.subs(x, x0)) if not isinstance(ddf_simbolica, (int, float, np.number)) else float(ddf_simbolica)
                 ax3.plot(x0, eval_ddf_0, 'o', color="#f1fa8c", markersize=7)
                 ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf > 0), color='#50fa7b', alpha=0.3)
