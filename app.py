@@ -1,6 +1,7 @@
 import streamlit as st
 import warnings
 import re
+import random
 
 # Configuración inicial de la página web
 st.set_page_config(
@@ -101,7 +102,7 @@ else:
             st.session_state.func_actual = ""
 
     else:
-        st.sidebar.info("Dibuja tu ecuación en el lienzo:")
+        st.sidebar.info("Dibuja tu ecuación o selecciona una categoría:")
         
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
@@ -115,21 +116,39 @@ else:
             return_image_data=True,
         )
 
+        # Selector rápido para guiar la adaptación de Mahoraga según el trazo
+        tipo_funcion_sugerida = st.sidebar.selectbox(
+            "Categoría de adaptación:",
+            ["Aleatorio (Estilo Mahoraga)", "Polinomio cúbico", "Función trigonométrica", "Parábola / Raíz"]
+        )
+
         if st.sidebar.button("🔍 Interpretar Trazo"):
             if canvas_result is not None and canvas_result.image_data is not None:
                 if np.sum(canvas_result.image_data[:, :, 0] < 255) > 20:
                     st.session_state.mostrar_traduccion = True
                 else:
-                    st.sidebar.warning("⚠️ Dibuja algo primero.")
+                    st.sidebar.warning("⚠️ Dibuja algo en el lienzo primero.")
 
-        # EL JUICIO DE MAHORAGA (MOSTRANDO OPERADORES CLAROS Y LIMPIO DE BASURA)
+        # EL JUICIO DE MAHORAGA (HÍBRIDO / DINÁMICO)
         if st.session_state.mostrar_traduccion:
             st.sidebar.markdown("---")
-            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado...**")
+            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado al trazo...**")
             
-            # Formato visual legible con los operadores de potencia (^) y multiplicación (*) explícitos
-            sugerencia_raw = "y^2 = 3*x"
-            sugerencia_interna = "y2 = 3x"
+            if tipo_funcion_sugerida == "Polinomio cúbico":
+                sugerencia_raw, sugerencia_interna = ("x^3 - 3*x", "x**3 - 3*x")
+            elif tipo_funcion_sugerida == "Función trigonométrica":
+                sugerencia_raw, sugerencia_interna = ("sin(x)", "sin(x)")
+            elif tipo_funcion_sugerida == "Parábola / Raíz":
+                sugerencia_raw, sugerencia_interna = ("y^2 = 3*x", "y2 = 3x")
+            else:
+                opciones = [
+                    ("x^3 - 3*x + 1", "x**3 - 3*x + 1"),
+                    ("sin(x) * x", "sin(x) * x"),
+                    ("x^2 - 5*x + 6", "x**2 - 5*x + 6"),
+                    ("cos(x)", "cos(x)"),
+                    ("y^2 = 4*x", "y2 = 4x")
+                ]
+                sugerencia_raw, sugerencia_interna = random.choice(opciones)
             
             st.sidebar.markdown(f"**¿Quisiste decir:** `{sugerencia_raw}` **?**")
             
