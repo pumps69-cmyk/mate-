@@ -21,7 +21,7 @@ except ImportError as e:
     LIBRERIAS_DISPONIBLES = False
     error_detalle = str(e)
 
-st.title("📐 Visualizador Interactivo de Cálculo Diferencial")
+st.title("📐 ira mama si se programar sjsjjsjs")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías en el entorno de Streamlit Cloud: {error_detalle}")
