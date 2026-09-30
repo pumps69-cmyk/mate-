@@ -3,7 +3,7 @@ import warnings
 
 # Configuración inicial de la página web
 st.set_page_config(
-    page_title="Cálculo Diferencial • es modafokin sub uwu subawu",
+    page_title="Cálculo Diferencial • Visualizador Táctil",
     page_icon="📐",
     layout="wide"
 )
@@ -24,7 +24,7 @@ except ImportError as e:
     error_detalle = str(e)
 
 st.title("📐 es modafokin sub uwu subawu")
-st.markdown("aca va un nomvre pero no se nos a ocurrido")
+st.markdown("Visualizador interactivo de cálculo diferencial: **Raíces, Monotonía, Concavidad y Taller Táctil**.")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías en el entorno de Streamlit Cloud: {error_detalle}")
@@ -48,24 +48,35 @@ else:
             return []
 
     # ==========================================
-    # BARRA LATERAL CON PESTAÑAS (TECLADO VS TÁCTIL)
+    # CONTROL DE ESTADO INICIAL
     # ==========================================
-    st.sidebar.markdown("## ⚙ Panel de Control Pro")
-    
-    modo_entrada = st.sidebar.radio("Método de Entrada:", ["⌨️ Teclado", "✍️ Táctil / Mano alzada"])
-
-    # Memoria de estado para que la función no se resetee
     if 'func_actual' not in st.session_state:
         st.session_state.func_actual = "x**3 - 3*x"
 
-    if modo_entrada == "⌨️ Teclado":
+    # ==========================================
+    # SELECCIÓN DE MODO (AISLADO PARA EVITAR CONFLICTOS)
+    # ==========================================
+    st.sidebar.markdown("## ⚙ Panel de Control Pro")
+    
+    modo_entrada = st.sidebar.radio(
+        "Elige el método de entrada:", 
+        ["⌨️ Escribir por Teclado", "✍️ Usar Panel Táctil"]
+    )
+
+    st.sidebar.markdown("---")
+
+    if modo_entrada == "⌨️ Escribir por Teclado":
+        st.sidebar.markdown("### ⌨️ Entrada por Teclado")
         func_input = st.sidebar.text_input("Ingresa f(x):", value=st.session_state.func_actual)
-        if func_input.strip() != "":
+        if func_input and func_input.strip() != "":
             st.session_state.func_actual = func_input.lower().replace('^', '**')
+        st.sidebar.info("💡 **Tip:** Usa `x**3`, `3*x`, `sqrt(x)`, `sin(x)` o `exp(x)`.")
+
     else:
-        st.sidebar.markdown("### ✍️ Lienzo Táctil")
-        st.sidebar.info("Dibuja tu fórmula en el recuadro blanco y presiona interpretar:")
+        st.sidebar.markdown("### ✍️ Panel Táctil / Mano alzada")
+        st.sidebar.info("Dibuja en el recuadro y haz clic en interpretar:")
         
+        # El lienzo solo se carga en este bloque, evitando errores de ejecución en segundo plano
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
             stroke_width=4,
@@ -77,9 +88,8 @@ else:
             key="canvas_tactil",
         )
         
-        # Botón blindado para interpretar el trazo sin errores
         if st.sidebar.button("Interpretar Trazo Dibujado"):
-            if canvas_result is not None and getattr(canvas_result, 'image_data', None) is not None:
+            if canvas_result is not None and canvas_result.image_data is not None:
                 try:
                     pixeles_dibujados = np.sum(canvas_result.image_data[:, :, 0] < 255)
                     if pixeles_dibujados > 40:
@@ -93,7 +103,7 @@ else:
             else:
                 st.sidebar.warning("⚠️ Dibuja primero una función en el lienzo.")
 
-    # Protección anti-vacíos por si se borra el campo de texto
+    # Protección anti-vacíos por seguridad
     if not st.session_state.func_actual.strip():
         st.session_state.func_actual = "x**3 - 3*x"
 
@@ -101,9 +111,6 @@ else:
 
     # Slider para el Parámetro X (Punto de Tangencia)
     x0 = st.sidebar.slider("Parámetro x (Punto de Tangencia):", min_value=-3.5, max_value=3.5, value=1.20, step=0.05)
-
-    st.sidebar.markdown("---")
-    st.sidebar.info("💡 **Tip:** Usa `x**3`, `3*x`, `sqrt(x)`, `sin(x)` o `exp(x)`.")
 
     # ==========================================
     # PROCESAMIENTO MATEMÁTICO Y VISUALIZACIÓN
@@ -170,7 +177,6 @@ else:
 
             x_vals = np.linspace(-4, 4, 600)
             
-            # Funciones auxiliares para evaluar vectores o escalares de forma segura
             def eval_segura(func_n, vals):
                 res = func_n(vals)
                 if isinstance(res, (int, float, np.number)):
@@ -202,7 +208,7 @@ else:
             ax2.plot(x_vals, y_vals_df, color="#ff79c6", linewidth=2, label=r"$f^{\prime}(x)$")
             ax2.plot(x0, m, 'o', color="#f1fa8c", markersize=7)
             ax2.axhline(0, color='gray', linewidth=1); ax2.axvline(0, color='gray', linewidth=0.5)
-            ax2.set_title("2. Primera Derivada (Monotonía / Pendiente)", color="white", fontsize=10)
+            ax2.set_title("2. Segunda Derivada (Monotonía / Pendiente)", color="white", fontsize=10)
             ax2.grid(True, linestyle=':', alpha=0.3)
             ax2.legend(loc="upper right", facecolor='#1e222d', edgecolor='#1e222d', labelcolor="white", fontsize=8)
 
@@ -214,7 +220,7 @@ else:
             ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf > 0), color='#50fa7b', alpha=0.3)
             ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf < 0), color='#ff5555', alpha=0.3)
             ax3.axhline(0, color='white', linewidth=1); ax3.axvline(0, color='gray', linewidth=0.5)
-            ax3.set_title("3. Segunda Derivada (Concavidad e Inflexión)", color="white", fontsize=10)
+            ax3.set_title("3. Tercera Derivada / Concavidad", color="white", fontsize=10)
             ax3.grid(True, linestyle=':', alpha=0.3)
             ax3.legend(loc="upper right", facecolor='#1e222d', edgecolor='#1e222d', labelcolor="white", fontsize=8)
 
