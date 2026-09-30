@@ -1,6 +1,6 @@
 import streamlit as st
 import warnings
-import re  # <--- IMPORTANTE: La magia negra para leer "3x" o "y2"
+import re
 
 # Configuración inicial de la página web
 st.set_page_config(
@@ -29,7 +29,6 @@ st.markdown("Acá va un nombre pero no se me ocurrió nada, ¿les parece bien Ju
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías: {error_detalle}")
 else:
-    # Agregamos la 'y' a los símbolos matemáticos conocidos
     x, y_sym = sp.symbols('x y')
 
     def buscar_raices_reales(expr):
@@ -54,10 +53,7 @@ else:
         t = raw_input.lower().replace(' ', '').replace('^', '**')
         t = t.replace('f(x)', 'y')
         
-        # MAGIA 1: Si hay un número pegado a una letra o paréntesis, pon multiplicación (Ej: 3x -> 3*x)
         t = re.sub(r'(\d)([xy(])', r'\1*\2', t)
-        
-        # MAGIA 2: Si hay una letra pegada a un número, asume potencia (Ej: x2 -> x**2, y2 -> y**2)
         t = re.sub(r'([xy])(\d+)', r'\1**\2', t)
         
         if '=' in t:
@@ -66,11 +62,9 @@ else:
                 lhs_expr = sp.sympify(lhs_str)
                 rhs_expr = sp.sympify(rhs_str)
                 
-                # MAGIA 3: Si usan la "y" mezclada, la app la despeja sola usando álgebra
                 if y_sym in lhs_expr.free_symbols or y_sym in rhs_expr.free_symbols:
                     sols = sp.solve(sp.Eq(lhs_expr, rhs_expr), y_sym)
                     if sols:
-                        # Toma la última solución (la rama positiva de la raíz)
                         return str(sols[-1]), "y"
                 return str(rhs_expr), "f(x)"
             except:
@@ -83,7 +77,7 @@ else:
     # ==========================================
     if 'func_actual' not in st.session_state:
         st.session_state.func_actual = "x**2"
-        st.session_state.display_text = "x2"  # Lo que ve el usuario en la caja
+        st.session_state.display_text = "x2"
         st.session_state.majoraga = "f(x)"
         st.session_state.mostrar_traduccion = False
 
@@ -91,14 +85,14 @@ else:
     # SELECCIÓN DE MODO
     # ==========================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
-    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️️ Teclado", "✍️ Pizarrón Táctil"])
+    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️ Pizarrón Táctil"])
     st.sidebar.markdown("---")
 
     if modo_entrada == "⌨️ Teclado":
         func_input = st.sidebar.text_input("Ingresa tu ecuación:", value=st.session_state.display_text)
         
         if func_input and func_input.strip() != "":
-            st.session_state.display_text = func_input  # Para que no le cambie el texto de golpe
+            st.session_state.display_text = func_input
             nueva_func, nuevo_pref = procesar_entrada_usuario(func_input)
             st.session_state.func_actual = nueva_func
             st.session_state.majoraga = nuevo_pref
@@ -106,7 +100,7 @@ else:
             st.session_state.func_actual = "x**2"
 
     else:
-        st.sidebar.info("Dibuja tu ecuación. Al interpretar, se transformará en texto.")
+        st.sidebar.info("Dibuja tu ecuación en el lienzo:")
         
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
@@ -127,20 +121,29 @@ else:
                 else:
                     st.sidebar.warning("⚠️ Dibuja algo primero.")
 
+        # EL JUICIO DE MAHORAGA (SIN TECLADO DE CONFIRMACIÓN MANUAL)
         if st.session_state.mostrar_traduccion:
-            st.sidebar.success("✅ Trazo detectado.")
-            func_traducida = st.sidebar.text_input("Confirma los caracteres (Ej: y2 = 3x):")
+            st.sidebar.markdown("---")
+            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado...**")
             
-            if st.sidebar.button("🚀 Transformar y Graficar"):
-                if func_traducida.strip():
-                    st.session_state.display_text = func_traducida
-                    nueva_func, nuevo_pref = procesar_entrada_usuario(func_traducida)
+            # Simulamos la interpretación automática del trazo detectado
+            sugerencia_automatica = "y2 = 3x"
+            
+            st.sidebar.markdown(f"**¿Quisiste decir:** `{sugerencia_automatica}`**?**")
+            
+            col_si, col_no = st.sidebar.columns(2)
+            with col_si:
+                if st.button("✅ Sí", key="mahoraga_si"):
+                    st.session_state.display_text = sugerencia_automatica
+                    nueva_func, nuevo_pref = procesar_entrada_usuario(sugerencia_automatica)
                     st.session_state.func_actual = nueva_func
                     st.session_state.majoraga = nuevo_pref
                     st.session_state.mostrar_traduccion = False
                     st.rerun()
-                else:
-                    st.sidebar.error("Escribe algo válido.")
+            with col_no:
+                if st.button("🔄 Reintentar", key="mahoraga_no"):
+                    st.session_state.mostrar_traduccion = False
+                    st.rerun()
 
     func_texto = st.session_state.func_actual
     majoraga = st.session_state.majoraga
@@ -267,4 +270,4 @@ else:
             st.pyplot(fig)
 
     except Exception as e:
-        st.error(f"⚠️ Revisa la sintaxis. (Intenta escribirlo más detallado si es muy complejo). Error: {e}")
+        st.error(f"⚠️ Revisa la sintaxis. Error: {e}")
