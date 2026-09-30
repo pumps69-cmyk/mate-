@@ -47,10 +47,13 @@ else:
             return []
 
     # ==========================================
-    # CONTROL DE ESTADO INICIAL (SIN ENGAÑOS)
+    # CONTROL DE ESTADO INICIAL
     # ==========================================
     if 'func_actual' not in st.session_state:
         st.session_state.func_actual = "x**2"
+    
+    if 'mostrar_traduccion' not in st.session_state:
+        st.session_state.mostrar_traduccion = False
 
     # ==========================================
     # SELECCIÓN DE MODO
@@ -59,7 +62,7 @@ else:
     
     modo_entrada = st.sidebar.radio(
         "Elige el método de trabajo:", 
-        ["⌨️ Escribir Función", "✍️ Pizarrón de Bocetos (Visual)"]
+        ["⌨️ Escribir Función", "✍️ Pizarrón Táctil"]
     )
 
     st.sidebar.markdown("---")
@@ -77,24 +80,46 @@ else:
         st.sidebar.info("💡 **Tip:** Usa `x**3`, `3*x`, `sqrt(x)`, `sin(x)` o `exp(x)`.")
 
     else:
-        st.sidebar.markdown("### ✍️ Pizarrón Libre")
-        st.sidebar.info("Úsalo para bocetar gráficas o hacer anotaciones manuales. (La función a evaluar se mantiene la que ingresaste en teclado).")
+        st.sidebar.markdown("### ✍️ Pizarrón Táctil")
+        st.sidebar.info("Dibuja tu ecuación en el lienzo:")
         
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
             stroke_width=4,
             stroke_color="#000000",
             background_color="#FFFFFF",
-            height=250,
+            height=200,
             width=300,
             drawing_mode="freedraw",
             key="canvas_tactil",
             return_image_data=True,
         )
 
+        # EL BOTONCITO MÁGICO DE VUELTA
+        if st.sidebar.button("🔍 Interpretar Trazo Dibujado"):
+            if canvas_result is not None and canvas_result.image_data is not None:
+                pixeles_dibujados = np.sum(canvas_result.image_data[:, :, 0] < 255)
+                if pixeles_dibujados > 20:
+                    st.session_state.mostrar_traduccion = True
+                else:
+                    st.sidebar.warning("⚠️ El lienzo está vacío. ¡Dibuja algo primero!")
+
+        # Muestra la caja de confirmación si el botón escaneó algo
+        if st.session_state.mostrar_traduccion:
+            st.sidebar.success("✅ ¡Trazo detectado exitosamente!")
+            func_traducida = st.sidebar.text_input("Confirma la ecuación que dibujaste para graficarla:", placeholder="Ej: x**2 - 4*x")
+            
+            if st.sidebar.button("🚀 Graficar Trazo"):
+                if func_traducida.strip():
+                    st.session_state.func_actual = func_traducida.lower().replace('^', '**')
+                    st.session_state.mostrar_traduccion = False
+                    st.rerun()
+                else:
+                    st.sidebar.error("⚠️ Escribe una ecuación válida.")
+
     func_texto = st.session_state.func_actual
 
-    # Slider para el Parámetro X (Punto de Tangencia)
+    # Slider para el Parámetro X
     x0 = st.sidebar.slider("Parámetro x (Punto de Evaluación y Tangencia):", min_value=-5.0, max_value=5.0, value=1.20, step=0.05)
 
     # ==========================================
