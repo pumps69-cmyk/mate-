@@ -1,1 +1,4 @@
-# mate-
+streamlit
+sympy
+matplotlib
+numpy
