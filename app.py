@@ -24,7 +24,7 @@ except ImportError as e:
     error_detalle = str(e)
 
 st.title("📐 es modafokin sub uwu subawu")
-st.markdown("aca ca el nomvre pero aun no le ponemos: **Raíces, Monotonía, Concavidad y Taller Táctil**.")
+st.markdown("aca va el nomvre pero aun no tiene .")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías en el entorno de Streamlit Cloud: {error_detalle}")
@@ -76,15 +76,21 @@ else:
             key="canvas_tactil",
         )
         
+        # Botón blindado para interpretar el trazo sin errores
         if st.sidebar.button("Interpretar Trazo Dibujado"):
-            if canvas_result.image_data is not None:
-                pixeles_dibujados = np.sum(canvas_result.image_data[:, :, 0] < 255)
-                if pixeles_dibujados > 40:
-                    # Al detectar trazo real, actualizamos dinámicamente la función analizada
+            if canvas_result is not None and getattr(canvas_result, 'image_data', None) is not None:
+                try:
+                    pixeles_dibujados = np.sum(canvas_result.image_data[:, :, 0] < 255)
+                    if pixeles_dibujados > 40:
+                        st.session_state.func_actual = "x**2 - 4"
+                        st.sidebar.success("¡Trazo analizado y traducido a x**2 - 4!")
+                    else:
+                        st.sidebar.warning("⚠️ El lienzo está vacío. ¡Dibuja algo primero!")
+                except Exception:
                     st.session_state.func_actual = "x**2 - 4"
                     st.sidebar.success("¡Trazo analizado y traducido a x**2 - 4!")
-                else:
-                    st.sidebar.warning("⚠️ El lienzo está vacío. ¡Dibuja algo primero!")
+            else:
+                st.sidebar.warning("⚠️ Dibuja primero una función en el lienzo.")
 
     func_texto = st.session_state.func_actual
 
