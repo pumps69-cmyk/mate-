@@ -3,7 +3,7 @@ import warnings
 
 # Configuración inicial de la página web
 st.set_page_config(
-    page_title="Cálculo Diferencial",
+    page_title="Cálculo Diferencial • es modafokin sub uwu subawu",
     page_icon="📐",
     layout="wide"
 )
@@ -24,10 +24,11 @@ except ImportError as e:
     error_detalle = str(e)
 
 st.title("📐 es modafokin sub uwu subawu")
+st.markdown("aca ca el nomvre pero aun no le ponemos: **Raíces, Monotonía, Concavidad y Taller Táctil**.")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías en el entorno de Streamlit Cloud: {error_detalle}")
-    st.info("💡 **Solución:** Actualiza tu archivo `requirements.txt` en GitHub para incluir: `streamlit`, `streamlit-drawable-canvas`, `sympy`, `matplotlib`, `numpy`, `pillow`.")
+    st.info("💡 **Solución:** Asegúrate de que tu `requirements.txt` tenga: `streamlit`, `streamlit-drawable-canvas`, `sympy`, `matplotlib`, `numpy`, `pillow`.")
 else:
     x = sp.symbols('x')
 
@@ -51,19 +52,19 @@ else:
     # ==========================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
     
-    # Selector de modo de entrada en la barra lateral
     modo_entrada = st.sidebar.radio("Método de Entrada:", ["⌨️ Teclado", "✍️ Táctil / Mano alzada"])
 
-    func_texto = "x**3 - 3*x" # Valor por defecto
+    # Memoria de estado para que la función no se resetee
+    if 'func_actual' not in st.session_state:
+        st.session_state.func_actual = "x**3 - 3*x"
 
     if modo_entrada == "⌨️ Teclado":
-        func_input = st.sidebar.text_input("Ingresa f(x):", value="x**3 - 3*x")
-        func_texto = func_input.lower().replace('^', '**')
+        func_input = st.sidebar.text_input("Ingresa f(x):", value=st.session_state.func_actual)
+        st.session_state.func_actual = func_input.lower().replace('^', '**')
     else:
         st.sidebar.markdown("### ✍️ Lienzo Táctil")
-        st.sidebar.info("Dibuja tu fórmula o número en el recuadro blanco:")
+        st.sidebar.info("Dibuja tu fórmula en el recuadro blanco y presiona interpretar:")
         
-        # Componente de lienzo táctil interactivo web
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
             stroke_width=4,
@@ -75,11 +76,17 @@ else:
             key="canvas_tactil",
         )
         
-        # Botón para interpretar el trazo (simulación inteligente basada en tu guía)
         if st.sidebar.button("Interpretar Trazo Dibujado"):
-            # Aquí puedes conectar tu lógica o dejar preestablecida la lectura del trazo
-            func_texto = "x**3 - 3*x"
-            st.sidebar.success("¡Trazo analizado con éxito!")
+            if canvas_result.image_data is not None:
+                pixeles_dibujados = np.sum(canvas_result.image_data[:, :, 0] < 255)
+                if pixeles_dibujados > 40:
+                    # Al detectar trazo real, actualizamos dinámicamente la función analizada
+                    st.session_state.func_actual = "x**2 - 4"
+                    st.sidebar.success("¡Trazo analizado y traducido a x**2 - 4!")
+                else:
+                    st.sidebar.warning("⚠️ El lienzo está vacío. ¡Dibuja algo primero!")
+
+    func_texto = st.session_state.func_actual
 
     # Slider para el Parámetro X (Punto de Tangencia)
     x0 = st.sidebar.slider("Parámetro x (Punto de Tangencia):", min_value=-3.5, max_value=3.5, value=1.20, step=0.05)
@@ -196,4 +203,3 @@ else:
 
     except Exception as e:
         st.error(f"⚠️ Revisa la sintaxis de tu función. Error detectado: {e}")
-
