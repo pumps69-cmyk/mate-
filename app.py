@@ -47,13 +47,16 @@ else:
         except:
             return []
 
-    # ==========================================
-    # ALGORITMO DE ADAPTACIÓN HUMANO-MÁQUINA
-    # ==========================================
-    def procesar_entrada_usuario(raw_input):
-        t = raw_input.lower().replace(' ', '').replace('^', '**')
+    # =========================================================================
+    # NUEVO ALGORITMO: YUSEPE (Traductor Intermediario y Motor Matemático)
+    # Traduce las fórmulas genéricas puras al intérprete de Python / SymPy
+    # =========================================================================
+    def yusepe_traducir_a_python(formula_raw):
+        # Limpieza profunda y estandarización
+        t = formula_raw.lower().replace(' ', '').replace('^', '**')
         t = t.replace('f(x)', 'y')
         
+        # Inserción de operadores de multiplicación faltantes
         t = re.sub(r'(\d)([xy(])', r'\1*\2', t)
         t = re.sub(r'([xy])(\d+)', r'\1**\2', t)
         
@@ -63,19 +66,24 @@ else:
                 lhs_expr = sp.sympify(lhs_str)
                 rhs_expr = sp.sympify(rhs_str)
                 
+                # Despeje automático si hay ecuaciones implícitas con 'y'
                 if y_sym in lhs_expr.free_symbols or y_sym in rhs_expr.free_symbols:
                     sols = sp.solve(sp.Eq(lhs_expr, rhs_expr), y_sym)
                     if sols:
                         return str(sols[-1]), "y"
                 return str(rhs_expr), "f(x)"
             except:
-                return "", "f(x)"
+                return t, "f(x)"
         else:
             return t, "f(x)"
 
-    # ==========================================
+    # Traductor inverso: De la estructura de Python al formato legible para Mahoraga/Humano
+    def formatear_para_humano(formula_python):
+        return formula_python.replace('**', '^')
+
+    # =========================================================================
     # MEMORIA DE ESTADO
-    # ==========================================
+    # =========================================================================
     if 'func_actual' not in st.session_state:
         st.session_state.func_actual = ""
         st.session_state.display_text = ""
@@ -84,19 +92,19 @@ else:
         st.session_state.sugerencia_maquina = ""
         st.session_state.cat_detectada = ""
 
-    # ==========================================
+    # =========================================================================
     # SELECCIÓN DE MODO
-    # ==========================================
+    # =========================================================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
     modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️ Pizarrón Táctil"])
     st.sidebar.markdown("---")
 
-    if modo_entrada == "⌨️ Teclado":
+    if modo_entrada == "⌨️️ Teclado":
         func_input = st.sidebar.text_input("Ingresa tu ecuación:", value=st.session_state.display_text, placeholder="Ej: y^2 = 3*x")
         
         if func_input and func_input.strip() != "":
             st.session_state.display_text = func_input
-            nueva_func, nuevo_pref = procesar_entrada_usuario(func_input)
+            nueva_func, nuevo_pref = yusepe_traducir_a_python(func_input)
             if nueva_func:
                 st.session_state.func_actual = nueva_func
                 st.session_state.majoraga = nuevo_pref
@@ -106,7 +114,7 @@ else:
     else:
         st.sidebar.info("Dibuja tu ecuación en el pizarrón táctil:")
         
-        # PIZARRÓN MÁS GRANDE Y SENSIBLE (Ancho 350, Alto 250, Trazo de grosor 6)
+        # Pizarrón grande y sensible
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
             stroke_width=6,
@@ -119,45 +127,55 @@ else:
             return_image_data=True,
         )
 
-        # ==========================================
-        # MINI BASE DE DATOS CON REFERENCIAS GENÉRICAS
-        # ==========================================
-        base_datos_mahoraga = [
-            {"categoria": "Polinomio Cúbico General", "humano": "x^3 - 3*x", "maquina": "x**3 - 3*x"},
-            {"categoria": "Polinomio Cuadrático General", "humano": "x^2 - 4*x + 3", "maquina": "x**2 - 4*x + 3"},
-            {"categoria": "Relación Implícita / Parábola", "humano": "y^2 = 4*x", "maquina": "y2 = 4x"},
-            {"categoria": "Función Trigonométrica Base", "humano": "sin(x)", "maquina": "sin(x)"},
-            {"categoria": "Función Trigonométrica Amortiguada", "humano": "sin(x) * x", "maquina": "sin(x) * x"},
-            {"categoria": "Polinomio Cúbico Desplazado", "humano": "x^3 - 3*x + 1", "maquina": "x**3 - 3*x + 1"}
+        # =====================================================================
+        # BASE DE DATOS GENÉRICA (Limpia, sin números fijos ni basura)
+        # =====================================================================
+        base_datos_generica = [
+            {"categoria": "Polinomio Cúbico Base", "patron": "x^3 - 3*x"},
+            {"categoria": "Polinomio Cuadrático Base", "patron": "x^2 - 4*x + 3"},
+            {"categoria": "Estructura Implícita / Parábola", "patron": "y^2 = 4*x"},
+            {"categoria": "Función Trigonométrica Pura", "patron": "sin(x)"},
+            {"categoria": "Producto Trigonométrico Lineal", "patron": "sin(x) * x"},
+            {"categoria": "Polinomio Cúbico Desplazado", "patron": "x^3 - 3*x + 1"}
         ]
 
         if st.sidebar.button("🔍 Interpretar Trazo"):
             if canvas_result is not None and canvas_result.image_data is not None:
-                # Umbral más sensible (> 10 píxeles para activarse con cualquier rayón ligero)
+                # Sensibilidad ajustada (> 10 píxeles pintados)
                 if np.sum(canvas_result.image_data[:, :, 0] < 255) > 10:
-                    seleccion = random.choice(base_datos_mahoraga)
-                    st.session_state.sugerencia_humana = seleccion["humano"]
-                    st.session_state.sugerencia_maquina = seleccion["maquina"]
-                    st.session_state.cat_detectada = seleccion["categoria"]
+                    
+                    # 1. Mahoraga elige una estructura genérica de la base
+                    item_elegido = random.choice(base_datos_generica)
+                    formula_generica = item_elegido["patron"]
+                    st.session_state.cat_detectada = item_elegido["categoria"]
+                    
+                    # 2. YUSEPE entra en acción: traduce la fórmula al intérprete de Python
+                    func_python, prefijo = yusepe_traducir_a_python(formula_generica)
+                    st.session_state.sugerencia_maquina = func_python
+                    
+                    # 3. Mahoraga la adapta de vuelta al formato humano para mostrarla
+                    st.session_state.sugerencia_humana = formatear_para_humano(formula_generica)
+                    st.session_state.temp_prefijo = prefijo
+                    
                 else:
                     st.sidebar.warning("⚠️ Dibuja algo en el lienzo primero.")
                     st.session_state.sugerencia_humana = ""
                     st.session_state.sugerencia_maquina = ""
 
-        # MOSTRAR LA SUGERENCIA DIRECTAMENTE DEBAJO DEL PIZARRÓN TÁCTIL
+        # MOSTRAR LA TRADUCCIÓN EN CASCADA DEBAJO DEL PIZARRÓN
         if st.session_state.sugerencia_humana:
             st.sidebar.markdown("---")
-            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado:**")
-            st.sidebar.caption(f"Patrón detectado: *{st.session_state.cat_detectada}*")
-            st.sidebar.info(f"**Para humano:** `{st.session_state.sugerencia_humana}`\n\n**Para máquina:** `{st.session_state.sugerencia_maquina}`")
+            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado (vía Yusepe):**")
+            st.sidebar.caption(f"Patrón genérico detectado: *{st.session_state.cat_detectada}*")
+            st.sidebar.info(f"**Para ti (Humano):** `{st.session_state.sugerencia_humana}`\n\n**Para Python (Máquina):** `{st.session_state.sugerencia_maquina}`")
             
             col_si, col_no = st.sidebar.columns(2)
             with col_si:
                 if st.button("✅ Aplicar", key="mahoraga_si"):
                     st.session_state.display_text = st.session_state.sugerencia_humana
-                    nueva_func, nuevo_pref = procesar_entrada_usuario(st.session_state.sugerencia_maquina)
-                    st.session_state.func_actual = nueva_func
-                    st.session_state.majoraga = nuevo_pref
+                    st.session_state.func_actual = st.session_state.sugerencia_maquina
+                    st.session_state.majoraga = st.session_state.temp_prefijo
+                    # Limpiamos memoria temporal
                     st.session_state.sugerencia_humana = ""
                     st.session_state.sugerencia_maquina = ""
                     st.rerun()
@@ -176,9 +194,9 @@ else:
     else:
         x0 = st.sidebar.slider("Punto x (Evaluación):", min_value=-5.0, max_value=5.0, value=1.20, step=0.05)
 
-        # ==========================================
-        # PROCESAMIENTO MATEMÁTICO
-        # ==========================================
+        # =====================================================================
+        # PROCESAMIENTO MATEMÁTICO (Motor SymPy / Gráficas)
+        # =====================================================================
         try:
             f_simbolica = sp.sympify(func_texto)
             df_simbolica = sp.diff(f_simbolica, x)
