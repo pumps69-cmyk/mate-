@@ -3,7 +3,7 @@ import warnings
 
 # Configuración inicial de la página web
 st.set_page_config(
-    page_title="Cálculo Diferencial • Visualizador Táctil",
+    page_title="Cálculo Diferencial",
     page_icon="📐",
     layout="wide"
 )
@@ -24,7 +24,7 @@ except ImportError as e:
     error_detalle = str(e)
 
 st.title("📐 es modafokin sub uwu subawu")
-st.markdown("Visualizador interactivo de cálculo diferencial: **Raíces, Monotonía, Concavidad y Taller Táctil**.")
+st.markdown("aca va un nomvre pero no se me ocurrio mada, les parece bien juan?.")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías en el entorno de Streamlit Cloud: {error_detalle}")
