@@ -163,9 +163,10 @@ else:
         st.markdown("### 📝 Ecuación Adaptada")
         
         col_f1, col_f2, col_f3 = st.columns(3)
-        with col_f1: st.latex(rf"{majoraga} = " + latex_f)
-        with col_f2: st.latex(rf"{majoraga}^{\prime} = " + latex_df)
-        with col_f3: st.latex(rf"{majoraga}^{\prime\prime} = " + latex_ddf)
+        # Fix de sintaxis: separamos las variables de las diagonales invertidas
+        with col_f1: st.latex(f"{majoraga} = " + latex_f)
+        with col_f2: st.latex(f"{majoraga}" + r"^{\prime} = " + latex_df)
+        with col_f3: st.latex(f"{majoraga}" + r"^{\prime\prime} = " + latex_ddf)
 
         st.markdown("---")
         col_datos, col_graficas = st.columns([1, 2.2])
@@ -175,20 +176,20 @@ else:
             def format_math_set(titulo, valores):
                 if valores:
                     str_vals = ", ".join([str(v) for v in valores])
-                    return rf"\text{{{titulo}: }} \{{{str_vals}\}}"
-                return rf"\text{{{titulo}: }} \emptyset"
+                    return r"\text{" + titulo + r": } \{ " + str_vals + r" \}"
+                return r"\text{" + titulo + r": } \emptyset"
 
             st.latex(format_math_set("Raíces (X)", intersecciones_x))
-            st.latex(rf"\text{{Corte Y: }} {interseccion_y}")
+            st.latex(r"\text{Corte Y: } " + str(interseccion_y))
             st.latex(format_math_set("Máximos", maximos))
             st.latex(format_math_set("Mínimos", minimos))
             st.latex(format_math_set("Inflexión", puntos_inflexion))
             
             st.markdown("---")
             st.markdown("### 🎯 Evaluación en Punto")
-            st.latex(rf"x_0 = {x0:.2f}")
-            st.latex(rf"{majoraga}({x0:.2f}) = {y0:.2f}")
-            st.latex(rf"{majoraga}'({x0:.2f}) = {m:.2f} \quad \text{{(Pendiente)}}")
+            st.latex(f"x_0 = {x0:.2f}")
+            st.latex(f"{majoraga}({x0:.2f}) = {y0:.2f}")
+            st.latex(f"{majoraga}'({x0:.2f}) = {m:.2f} " + r"\quad \text{(Pendiente)}")
 
         with col_graficas:
             f_num = sp.lambdify(x, f_simbolica, 'numpy')
@@ -213,7 +214,7 @@ else:
 
             # Gráfica 1
             ax1.set_facecolor('#1e222d')
-            ax1.plot(x_vals, y_vals_f, color="#00d2ff", linewidth=2.2, label=rf"${majoraga}$")
+            ax1.plot(x_vals, y_vals_f, color="#00d2ff", linewidth=2.2, label=f"${majoraga}$")
             ax1.plot(x_vals, y_tangente, color="#ffb86c", linestyle="--", label="Tangente")
             ax1.fill_between(x_vals, np.min(y_vals_f)-5, np.max(y_vals_f)+5, where=(y_vals_ddf > 0), color='#50fa7b', alpha=0.08)
             ax1.fill_between(x_vals, np.min(y_vals_f)-5, np.max(y_vals_f)+5, where=(y_vals_ddf < 0), color='#ff5555', alpha=0.08)
@@ -225,7 +226,7 @@ else:
 
             # Gráfica 2
             ax2.set_facecolor('#1e222d')
-            ax2.plot(x_vals, y_vals_df, color="#ff79c6", linewidth=2, label=rf"${majoraga}'$")
+            ax2.plot(x_vals, y_vals_df, color="#ff79c6", linewidth=2, label=f"${majoraga}'$")
             ax2.plot(x0, m, 'o', color="#f1fa8c", markersize=7)
             ax2.axhline(0, color='gray', linewidth=1); ax2.axvline(0, color='gray', linewidth=0.5)
             ax2.set_title("2. Primera Derivada", color="white", fontsize=10)
@@ -234,7 +235,7 @@ else:
 
             # Gráfica 3
             ax3.set_facecolor('#1e222d')
-            ax3.plot(x_vals, y_vals_ddf, color="#bd93f9", linewidth=2, label=rf"${majoraga}''$")
+            ax3.plot(x_vals, y_vals_ddf, color="#bd93f9", linewidth=2, label=f"${majoraga}''$")
             eval_ddf_0 = float(ddf_simbolica.subs(x, x0)) if not isinstance(ddf_simbolica, (int, float, np.number)) else float(ddf_simbolica)
             ax3.plot(x0, eval_ddf_0, 'o', color="#f1fa8c", markersize=7)
             ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf > 0), color='#50fa7b', alpha=0.3)
@@ -248,3 +249,4 @@ else:
 
     except Exception as e:
         st.error(f"⚠️ Revisa la sintaxis. (Ejemplo válido: y = 3*x**2). Error: {e}")
+
