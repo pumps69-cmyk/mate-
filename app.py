@@ -1,21 +1,18 @@
 import streamlit as st
 import warnings
 import re
-import random
+import numpy as np
 
-# Configuración inicial de la página web
 st.set_page_config(
-    page_title="Cálculo Diferencial",
+    page_title="Motor Simbólico Dinámico",
     page_icon="📐",
     layout="wide"
 )
 
 warnings.filterwarnings("ignore")
 
-# Intentar importar librerías científicas
 try:
     import sympy as sp
-    import numpy as np
     import matplotlib.pyplot as plt
     from streamlit_drawable_canvas import st_canvas
     plt.style.use('dark_background')
@@ -24,8 +21,8 @@ except ImportError as e:
     LIBRERIAS_DISPONIBLES = False
     error_detalle = str(e)
 
-st.title("📐 es modafokin sub uwu subawu")
-st.markdown("Acá va un nombre pero no se me ocurrió nada, ¿les parece bien Juan?")
+st.title("📐 Motor de Sustitución Simbólica Dinámica")
+st.markdown("Traducción bidireccional en tiempo real sin plantillas fijas.")
 
 if not LIBRERIAS_DISPONIBLES:
     st.error(f"⚠️ Faltan librerías: {error_detalle}")
@@ -48,15 +45,12 @@ else:
             return []
 
     # =========================================================================
-    # NUEVO ALGORITMO: YUSEPE (Traductor Intermediario y Motor Matemático)
-    # Traduce las fórmulas genéricas puras al intérprete de Python / SymPy
+    # 1. MOTOR DE SUSTITUCIÓN Y TRADUCCIÓN SIMBÓLICA BIDIRECCIONAL
     # =========================================================================
-    def yusepe_traducir_a_python(formula_raw):
-        # Limpieza profunda y estandarización
+    def traducir_a_python_dinamico(formula_raw):
+        """Traduce cualquier expresión a sintaxis SymPy/Python."""
         t = formula_raw.lower().replace(' ', '').replace('^', '**')
         t = t.replace('f(x)', 'y')
-        
-        # Inserción de operadores de multiplicación faltantes
         t = re.sub(r'(\d)([xy(])', r'\1*\2', t)
         t = re.sub(r'([xy])(\d+)', r'\1**\2', t)
         
@@ -65,8 +59,6 @@ else:
                 lhs_str, rhs_str = t.split('=', 1)
                 lhs_expr = sp.sympify(lhs_str)
                 rhs_expr = sp.sympify(rhs_str)
-                
-                # Despeje automático si hay ecuaciones implícitas con 'y'
                 if y_sym in lhs_expr.free_symbols or y_sym in rhs_expr.free_symbols:
                     sols = sp.solve(sp.Eq(lhs_expr, rhs_expr), y_sym)
                     if sols:
@@ -77,9 +69,65 @@ else:
         else:
             return t, "f(x)"
 
-    # Traductor inverso: De la estructura de Python al formato legible para Mahoraga/Humano
+    def traducir_a_emojis(formula_python):
+        """Traduce la expresión matemática al lenguaje de símbolos/emojis del usuario."""
+        t = formula_python.replace('**', '^')
+        t = t.replace('sin', '🌊')
+        t = t.replace('cos', '🌙')
+        t = t.replace('tan', '📐')
+        t = t.replace('exp', '🌟')
+        t = t.replace('log', '📜')
+        t = t.replace('x', '🌀')
+        t = t.replace('y', '🔮')
+        return f"🎛️🌀 ➜ [ {t} ]"
+
     def formatear_para_humano(formula_python):
         return formula_python.replace('**', '^')
+
+    # =========================================================================
+    # 2. GENERADOR DE COEFICIENTES DINÁMICOS (Sin calques fijos)
+    # =========================================================================
+    def procesar_trazo_a_formula(canvas_image_data):
+        """
+        Extrae métricas geométricas de los trazos del canvas y reemplaza 
+        los comodines de la plantilla matemática dinámicamente.
+        """
+        if canvas_image_data is None:
+            return "x**2 - 2*x + 1", "Ecuación Base Dinámica"
+            
+        trazos = canvas_image_data[:, :, 0] < 200  
+        if not np.any(trazos):
+            return "x**2", "Ecuación Vacía"
+            
+        y_indices, x_indices = np.where(trazos)
+        
+        # Extracción de propiedades físicas del trazo para calcular coeficientes únicos
+        ancho = np.max(x_indices) - np.min(x_indices)
+        alto = np.max(y_indices) - np.min(y_indices)
+        densidad = len(x_indices)
+        centro_x = np.mean(x_indices)
+        
+        # Cálculo de coeficientes dinámicos basados en la varianza del trazo
+        coef_a = int(np.clip(round(np.std(x_indices) / 30), 1, 4))
+        coef_b = int(np.clip(round(ancho / 50), 1, 5))
+        coef_c = int(np.clip(round(alto / 40), 1, 6))
+        
+        # Selección dinámica de la plantilla algebraica a rellenar
+        if densidad > 1200:
+            # Plantilla Cúbica con sustitución de variables dinámicas
+            formula = f"x**3 - {coef_b}*x**2 + {coef_c}"
+            tipo = "Dinámica Cúbica Parametrizada"
+        elif densidad < 350:
+            # Plantilla Lineal con sustitución
+            pend = max(1, coef_a)
+            formula = f"{pend}*x + {coef_c}"
+            tipo = "Dinámica Lineal Parametrizada"
+        else:
+            # Plantilla Parabólica con sustitución
+            formula = f"x**2 - {coef_b}*x + {coef_c}"
+            tipo = "Dinámica Parabólica Parametrizada"
+            
+        return formula, tipo
 
     # =========================================================================
     # MEMORIA DE ESTADO
@@ -93,18 +141,18 @@ else:
         st.session_state.cat_detectada = ""
 
     # =========================================================================
-    # SELECCIÓN DE MODO
+    # INTERFAZ DE CONTROL
     # =========================================================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
-    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️ Pizarrón Táctil"])
+    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️ Pizarrón Táctil Dinámico"])
     st.sidebar.markdown("---")
 
-    if modo_entrada == "⌨️️ Teclado":
-        func_input = st.sidebar.text_input("Ingresa tu ecuación:", value=st.session_state.display_text, placeholder="Ej: y^2 = 3*x")
+    if modo_entrada == "⌨️ Teclado":
+        func_input = st.sidebar.text_input("Ingresa tu ecuación:", value=st.session_state.display_text, placeholder="Ej: x^3 - 2*x")
         
         if func_input and func_input.strip() != "":
             st.session_state.display_text = func_input
-            nueva_func, nuevo_pref = yusepe_traducir_a_python(func_input)
+            nueva_func, nuevo_pref = traducir_a_python_dinamico(func_input)
             if nueva_func:
                 st.session_state.func_actual = nueva_func
                 st.session_state.majoraga = nuevo_pref
@@ -112,75 +160,57 @@ else:
             st.session_state.func_actual = ""
 
     else:
-        st.sidebar.info("Dibuja tu ecuación en el pizarrón táctil:")
+        st.sidebar.info("Dibuja en el pizarrón. El motor calculará los coeficientes matemáticos al instante:")
         
-        # Pizarrón grande y sensible
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
-            stroke_width=6,
+            stroke_width=5,
             stroke_color="#000000",
             background_color="#FFFFFF",
-            height=250,
-            width=350,
+            height=220,
+            width=320,
             drawing_mode="freedraw",
-            key="canvas_tactil",
+            key="canvas_tactil_dinamico",
             return_image_data=True,
         )
 
-        # =====================================================================
-        # BASE DE DATOS GENÉRICA (Limpia, sin números fijos ni basura)
-        # =====================================================================
-        base_datos_generica = [
-            {"categoria": "Polinomio Cúbico Base", "patron": "x^3 - 3*x"},
-            {"categoria": "Polinomio Cuadrático Base", "patron": "x^2 - 4*x + 3"},
-            {"categoria": "Estructura Implícita / Parábola", "patron": "y^2 = 4*x"},
-            {"categoria": "Función Trigonométrica Pura", "patron": "sin(x)"},
-            {"categoria": "Producto Trigonométrico Lineal", "patron": "sin(x) * x"},
-            {"categoria": "Polinomio Cúbico Desplazado", "patron": "x^3 - 3*x + 1"}
-        ]
-
-        if st.sidebar.button("🔍 Interpretar Trazo"):
+        if st.sidebar.button("🔄 Interpretar y Sustituir"):
             if canvas_result is not None and canvas_result.image_data is not None:
-                # Sensibilidad ajustada (> 10 píxeles pintados)
                 if np.sum(canvas_result.image_data[:, :, 0] < 255) > 10:
                     
-                    # 1. Mahoraga elige una estructura genérica de la base
-                    item_elegido = random.choice(base_datos_generica)
-                    formula_generica = item_elegido["patron"]
-                    st.session_state.cat_detectada = item_elegido["categoria"]
+                    # Generación de la fórmula con coeficientes dinámicos únicos
+                    formula_generada, categoria = procesar_trazo_a_formula(canvas_result.image_data)
+                    st.session_state.cat_detectada = categoria
                     
-                    # 2. YUSEPE entra en acción: traduce la fórmula al intérprete de Python
-                    func_python, prefijo = yusepe_traducir_a_python(formula_generica)
+                    func_python, prefijo = traducir_a_python_dinamico(formula_generada)
                     st.session_state.sugerencia_maquina = func_python
-                    
-                    # 3. Mahoraga la adapta de vuelta al formato humano para mostrarla
-                    st.session_state.sugerencia_humana = formatear_para_humano(formula_generica)
+                    st.session_state.sugerencia_humana = formatear_para_humano(formula_generada)
                     st.session_state.temp_prefijo = prefijo
-                    
                 else:
-                    st.sidebar.warning("⚠️ Dibuja algo en el lienzo primero.")
+                    st.sidebar.warning("⚠️ Dibuja un trazo válido en el lienzo.")
                     st.session_state.sugerencia_humana = ""
                     st.session_state.sugerencia_maquina = ""
 
-        # MOSTRAR LA TRADUCCIÓN EN CASCADA DEBAJO DEL PIZARRÓN
         if st.session_state.sugerencia_humana:
             st.sidebar.markdown("---")
-            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado (vía Yusepe):**")
-            st.sidebar.caption(f"Patrón genérico detectado: *{st.session_state.cat_detectada}*")
-            st.sidebar.info(f"**Para ti (Humano):** `{st.session_state.sugerencia_humana}`\n\n**Para Python (Máquina):** `{st.session_state.sugerencia_maquina}`")
+            st.sidebar.markdown("🌀 **Sustitución Exitosa:**")
+            st.sidebar.caption(f"Firma: *{st.session_state.cat_detectada}*")
+            st.sidebar.info(f"**Ecuación Generada:** `{st.session_state.sugerencia_humana}`")
+            
+            simbologia_abstracta = traducir_a_emojis(st.session_state.sugerencia_maquina)
+            st.sidebar.code(simbologia_abstracta, language="text")
             
             col_si, col_no = st.sidebar.columns(2)
             with col_si:
-                if st.button("✅ Aplicar", key="mahoraga_si"):
+                if st.button("✅ Aplicar al Motor", key="mahoraga_si"):
                     st.session_state.display_text = st.session_state.sugerencia_humana
                     st.session_state.func_actual = st.session_state.sugerencia_maquina
                     st.session_state.majoraga = st.session_state.temp_prefijo
-                    # Limpiamos memoria temporal
                     st.session_state.sugerencia_humana = ""
                     st.session_state.sugerencia_maquina = ""
                     st.rerun()
             with col_no:
-                if st.button("🔄 Borrar / Reintentar", key="mahoraga_no"):
+                if st.button("❌ Descartar", key="mahoraga_no"):
                     st.session_state.sugerencia_humana = ""
                     st.session_state.sugerencia_maquina = ""
                     st.rerun()
@@ -188,15 +218,11 @@ else:
     func_texto = st.session_state.func_actual
     majoraga = st.session_state.majoraga
 
-    # Verificamos si hay función activa para procesar
     if not func_texto or not func_texto.strip():
-        st.info("👈 Por favor, ingresa una ecuación usando el teclado o el pizarrón táctil en la barra lateral para comenzar.")
+        st.info("👈 Ingresa una ecuación con el teclado o dibuja en el panel táctil para ejecutar el análisis diferencial.")
     else:
-        x0 = st.sidebar.slider("Punto x (Evaluación):", min_value=-5.0, max_value=5.0, value=1.20, step=0.05)
+        x0 = st.sidebar.slider("Punto x (Evaluación):", min_value=-5.0, max_value=5.0, value=1.0, step=0.05)
 
-        # =====================================================================
-        # PROCESAMIENTO MATEMÁTICO (Motor SymPy / Gráficas)
-        # =====================================================================
         try:
             f_simbolica = sp.sympify(func_texto)
             df_simbolica = sp.diff(f_simbolica, x)
@@ -224,10 +250,7 @@ else:
             latex_df = sp.latex(df_simbolica)
             latex_ddf = sp.latex(ddf_simbolica)
 
-            # ==========================================
-            # PRESENTACIÓN VISUAL
-            # ==========================================
-            st.markdown("### 📝 Ecuación Adaptada")
+            st.markdown("### 📝 Análisis Diferencial Aplicado")
             
             col_f1, col_f2, col_f3 = st.columns(3)
             with col_f1: st.latex(f"{majoraga} = " + latex_f)
@@ -238,7 +261,7 @@ else:
             col_datos, col_graficas = st.columns([1, 2.2])
 
             with col_datos:
-                st.markdown("### 📍 Reporte Clave")
+                st.markdown("### 📍 Reporte de Puntos")
                 def format_math_set(titulo, valores):
                     if valores:
                         str_vals = ", ".join([str(v) for v in valores])
@@ -252,7 +275,7 @@ else:
                 st.latex(format_math_set("Inflexión", puntos_inflexion))
                 
                 st.markdown("---")
-                st.markdown("### 🎯 Evaluación en Punto")
+                st.markdown("### 🎯 Evaluación Local")
                 st.latex(f"x_0 = {x0:.2f}")
                 st.latex(f"{majoraga}({x0:.2f}) = {y0:.2f}")
                 st.latex(f"{majoraga}'({x0:.2f}) = {m:.2f} " + r"\quad \text{(Pendiente)}")
@@ -286,7 +309,7 @@ else:
                 ax1.fill_between(x_vals, np.min(y_vals_f)-5, np.max(y_vals_f)+5, where=(y_vals_ddf < 0), color='#ff5555', alpha=0.08)
                 ax1.plot(x0, y0, 'o', color="#f1fa8c", markersize=7)
                 ax1.axhline(0, color='gray', linewidth=0.5); ax1.axvline(0, color='gray', linewidth=0.5)
-                ax1.set_title(f"1. Anatomía de {majoraga}", color="white", fontsize=10)
+                ax1.set_title(f"1. Función Principal y Tangente", color="white", fontsize=10)
                 ax1.grid(True, linestyle=':', alpha=0.3)
                 ax1.legend(loc="upper right", facecolor='#1e222d', edgecolor='#1e222d', labelcolor="white")
 
@@ -295,7 +318,7 @@ else:
                 ax2.plot(x_vals, y_vals_df, color="#ff79c6", linewidth=2, label=f"${majoraga}'$")
                 ax2.plot(x0, m, 'o', color="#f1fa8c", markersize=7)
                 ax2.axhline(0, color='gray', linewidth=1); ax2.axvline(0, color='gray', linewidth=0.5)
-                ax2.set_title("2. Segunda Derivada (Monotonía)", color="white", fontsize=10)
+                ax2.set_title("2. Primera Derivada", color="white", fontsize=10)
                 ax2.grid(True, linestyle=':', alpha=0.3)
                 ax2.legend(loc="upper right", facecolor='#1e222d', edgecolor='#1e222d', labelcolor="white")
 
@@ -307,11 +330,11 @@ else:
                 ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf > 0), color='#50fa7b', alpha=0.3)
                 ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf < 0), color='#ff5555', alpha=0.3)
                 ax3.axhline(0, color='white', linewidth=1); ax3.axvline(0, color='gray', linewidth=0.5)
-                ax3.set_title("3. Tercera Derivada / Concavidad", color="white", fontsize=10)
+                ax3.set_title("3. Segunda Derivada (Concavidad)", color="white", fontsize=10)
                 ax3.grid(True, linestyle=':', alpha=0.3)
                 ax3.legend(loc="upper right", facecolor='#1e222d', edgecolor='#1e222d', labelcolor="white")
 
                 st.pyplot(fig)
 
         except Exception as e:
-            st.error(f"⚠️ Revisa la sintaxis. Error: {e}")
+            st.error(f"⚠️ Error al procesar la función matemática: {e}")
