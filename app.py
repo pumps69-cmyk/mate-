@@ -74,19 +74,20 @@ else:
             return t, "f(x)"
 
     # ==========================================
-    # MEMORIA DE ESTADO (LIMPIA DE BASURA INICIAL)
+    # MEMORIA DE ESTADO
     # ==========================================
     if 'func_actual' not in st.session_state:
         st.session_state.func_actual = ""
         st.session_state.display_text = ""
         st.session_state.majoraga = "f(x)"
-        st.session_state.mostrar_traduccion = False
+        st.session_state.sugerencia_humana = ""
+        st.session_state.sugerencia_maquina = ""
 
     # ==========================================
     # SELECCIÓN DE MODO
     # ==========================================
     st.sidebar.markdown("## ⚙ Panel de Control Pro")
-    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️ Teclado", "✍️ Pizarrón Táctil"])
+    modo_entrada = st.sidebar.radio("Método de trabajo:", ["⌨️️ Teclado", "✍️ Pizarrón Táctil"])
     st.sidebar.markdown("---")
 
     if modo_entrada == "⌨️ Teclado":
@@ -102,7 +103,7 @@ else:
             st.session_state.func_actual = ""
 
     else:
-        st.sidebar.info("Dibuja tu ecuación o selecciona una categoría:")
+        st.sidebar.info("Dibuja tu ecuación en el pizarrón táctil:")
         
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
@@ -116,54 +117,51 @@ else:
             return_image_data=True,
         )
 
-        # Selector rápido para guiar la adaptación de Mahoraga según el trazo
-        tipo_funcion_sugerida = st.sidebar.selectbox(
-            "Categoría de adaptación:",
-            ["Aleatorio (Estilo Mahoraga)", "Polinomio cúbico", "Función trigonométrica", "Parábola / Raíz"]
-        )
+        # ==========================================
+        # MINI BASE DE DATOS DE TRADUCCIÓN (HUMANO <-> MÁQUINA)
+        # ==========================================
+        base_datos_mahoraga = [
+            {"humano": "y^2 = 3*x", "maquina": "y2 = 3x"},
+            {"humano": "x^3 - 3*x", "maquina": "x**3 - 3*x"},
+            {"humano": "x^2 - 5*x + 6", "maquina": "x**2 - 5*x + 6"},
+            {"humano": "sin(x)", "maquina": "sin(x)"},
+            {"humano": "cos(x)", "maquina": "cos(x)"},
+            {"humano": "x^3 - 3*x + 1", "maquina": "x**3 - 3*x + 1"}
+        ]
 
         if st.sidebar.button("🔍 Interpretar Trazo"):
             if canvas_result is not None and canvas_result.image_data is not None:
                 if np.sum(canvas_result.image_data[:, :, 0] < 255) > 20:
-                    st.session_state.mostrar_traduccion = True
+                    # Simulamos la "adaptación" tomando un par al azar de nuestra mini base de datos
+                    seleccion = random.choice(base_datos_mahoraga)
+                    st.session_state.sugerencia_humana = seleccion["humano"]
+                    st.session_state.sugerencia_maquina = seleccion["maquina"]
                 else:
                     st.sidebar.warning("⚠️ Dibuja algo en el lienzo primero.")
+                    st.session_state.sugerencia_humana = ""
+                    st.session_state.sugerencia_maquina = ""
 
-        # EL JUICIO DE MAHORAGA (HÍBRIDO / DINÁMICO)
-        if st.session_state.mostrar_traduccion:
+        # MOSTRAR LA SUGERENCIA DIRECTAMENTE DEBAJO DEL PIZARRÓN TÁCTIL
+        if st.session_state.sugerencia_humana:
             st.sidebar.markdown("---")
-            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado al trazo...**")
-            
-            if tipo_funcion_sugerida == "Polinomio cúbico":
-                sugerencia_raw, sugerencia_interna = ("x^3 - 3*x", "x**3 - 3*x")
-            elif tipo_funcion_sugerida == "Función trigonométrica":
-                sugerencia_raw, sugerencia_interna = ("sin(x)", "sin(x)")
-            elif tipo_funcion_sugerida == "Parábola / Raíz":
-                sugerencia_raw, sugerencia_interna = ("y^2 = 3*x", "y2 = 3x")
-            else:
-                opciones = [
-                    ("x^3 - 3*x + 1", "x**3 - 3*x + 1"),
-                    ("sin(x) * x", "sin(x) * x"),
-                    ("x^2 - 5*x + 6", "x**2 - 5*x + 6"),
-                    ("cos(x)", "cos(x)"),
-                    ("y^2 = 4*x", "y2 = 4x")
-                ]
-                sugerencia_raw, sugerencia_interna = random.choice(opciones)
-            
-            st.sidebar.markdown(f"**¿Quisiste decir:** `{sugerencia_raw}` **?**")
+            st.sidebar.markdown("🌀 **Mahoraga se ha adaptado:**")
+            st.sidebar.info(f"Lo que tú ves (Humano): `{st.session_state.sugerencia_humana}`\n\nLo que entiende la PC: `{st.session_state.sugerencia_maquina}`")
             
             col_si, col_no = st.sidebar.columns(2)
             with col_si:
-                if st.button("✅ Sí", key="mahoraga_si"):
-                    st.session_state.display_text = sugerencia_raw
-                    nueva_func, nuevo_pref = procesar_entrada_usuario(sugerencia_interna)
+                if st.button("✅ Aplicar", key="mahoraga_si"):
+                    st.session_state.display_text = st.session_state.sugerencia_humana
+                    nueva_func, nuevo_pref = procesar_entrada_usuario(st.session_state.sugerencia_maquina)
                     st.session_state.func_actual = nueva_func
                     st.session_state.majoraga = nuevo_pref
-                    st.session_state.mostrar_traduccion = False
+                    # Limpiamos la sugerencia temporal para reiniciar el ciclo
+                    st.session_state.sugerencia_humana = ""
+                    st.session_state.sugerencia_maquina = ""
                     st.rerun()
             with col_no:
-                if st.button("🔄 Reintentar", key="mahoraga_no"):
-                    st.session_state.mostrar_traduccion = False
+                if st.button("🔄 Borrar / Reintentar", key="mahoraga_no"):
+                    st.session_state.sugerencia_humana = ""
+                    st.session_state.sugerencia_maquina = ""
                     st.rerun()
 
     func_texto = st.session_state.func_actual
@@ -282,7 +280,7 @@ else:
 
                 # Gráfica 3
                 ax3.set_facecolor('#1e222d')
-                ax3.plot(x_vals, y_vals_ddf, color="#bd93f9", linewidth=2, label=f"${majoraga}''$")
+                ax3.plot(x_vals, y_vals_ddf, color="bd93f9", linewidth=2, label=f"${majoraga}''$")
                 eval_ddf_0 = float(ddf_simbolica.subs(x, x0)) if not isinstance(ddf_simbolica, (int, float, np.number)) else float(ddf_simbolica)
                 ax3.plot(x0, eval_ddf_0, 'o', color="#f1fa8c", markersize=7)
                 ax3.fill_between(x_vals, 0, y_vals_ddf, where=(y_vals_ddf > 0), color='#50fa7b', alpha=0.3)
