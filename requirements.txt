@@ -1,4 +1,6 @@
 streamlit
+streamlit-drawable-canvas
 sympy
 matplotlib
 numpy
+PIL
