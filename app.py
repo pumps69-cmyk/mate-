@@ -60,7 +60,7 @@ else:
     
     modo_entrada = st.sidebar.radio(
         "Elige el método de entrada:", 
-        ["⌨️ Escribir por Teclado", "✍️ Usar Panel Táctil"]
+        ["⌨️️ Escribir por Teclado", "✍️ Usar Panel Táctil"]
     )
 
     st.sidebar.markdown("---")
@@ -76,7 +76,7 @@ else:
         st.sidebar.markdown("### ✍️ Panel Táctil / Mano alzada")
         st.sidebar.info("Dibuja en el recuadro y haz clic en interpretar:")
         
-        # El lienzo solo se carga en este bloque, evitando errores de ejecución en segundo plano
+        # El lienzo con return_image_data=True para evitar el RuntimeError
         canvas_result = st_canvas(
             fill_color="rgba(255, 255, 255, 0.3)",
             stroke_width=4,
@@ -86,6 +86,7 @@ else:
             width=300,
             drawing_mode="freedraw",
             key="canvas_tactil",
+            return_image_data=True,
         )
         
         if st.sidebar.button("Interpretar Trazo Dibujado"):
